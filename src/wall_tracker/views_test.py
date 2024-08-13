@@ -34,13 +34,14 @@ def profiles(clear_db):
 @pytest.mark.parametrize('url', ['/profiles', 
                                  '/profiles/',
                                  '/profiles/1/days/-1', 
-                                 '/profiles/10/days/1',
+                                 'profiles/3/days/1/',
                                  '/profiles/-1/days/1',
                                  '/asdf',
                                  ])
 @pytest.mark.django_db(databases=['TEST', 'default'])
 def test_must_return_404_not_found_for_any_unknown_url(client, profiles, url):
     response = client.get(url)
+
     assert response.status_code == 404
 
     data = json.loads(response.content.decode('utf-8'))

@@ -1,5 +1,6 @@
 from django.http import JsonResponse
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_404_NOT_FOUND, \
+    HTTP_500_INTERNAL_SERVER_ERROR, HTTP_405_METHOD_NOT_ALLOWED
 import os
 from pathlib import Path
 import logging

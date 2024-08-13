@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from django.http import JsonResponse
 from django.http import Http404
-from rest_framework.status import HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
+from rest_framework.status import HTTP_404_NOT_FOUND, HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR
 from itertools import accumulate
 
 from wall_tracker.models import WallProfile, MIN_WALL_HEIGHT, MAX_WALL_HEIGHT
@@ -77,12 +77,12 @@ class AllProfilesDailyCostView(APIView):
             profiles = WallProfile.objects.all()
         except Exception:
             _logger.debug(f'An unexpected error: [{request.id=}]', exc_info=e)
-            return JsonResponse(data=dict(data=dict(), 
-                                          meta=dict(id=request.id, result='error', desc='Internal server error')), 
-                                                    status=HTTP_500_INTERNAL_SERVER_ERROR)
+            return make_response(request_id=request.id, 
+                                 result='error', 
+                                 desc='Internal server error', 
+                                 status=HTTP_500_INTERNAL_SERVER_ERROR)
 
         cost = 0
-        
         for profile in profiles:
             cost += get_total_daily_volume(day, profile.initial_heights) * ICE_UNIT_COST
         return make_response(request_id=request.id, data=dict(day=day, cost=cost))
@@ -94,9 +94,10 @@ class TotalWallCostView(APIView):
             profiles = WallProfile.objects.all()
         except Exception:
             _logger.debug(f'An unexpected error: [{request.id=}]', exc_info=e)
-            return JsonResponse(data=dict(data=dict(), 
-                                          meta=dict(id=request.id, result='error', desc='Internal server error')), 
-                                                    status=HTTP_500_INTERNAL_SERVER_ERROR)
+            return make_response(request_id=request.id, 
+                                 result='error', 
+                                 desc='Internal server error', 
+                                 status=HTTP_500_INTERNAL_SERVER_ERROR)
 
         cost = 0
         for profile in profiles:
@@ -106,10 +107,28 @@ class TotalWallCostView(APIView):
         return make_response(request_id=request.id, data=dict(day=None, cost=cost))
 
 
-class UnmatchedView(APIView):
-    def get(self, request):
-        _logger.debug('Unmatched')
+class NotFoundView(APIView):
+    def get(self, request, *args, **kwargs):
+        _logger.debug('NotFoundView')
         return make_response(request_id=request.id, 
                              result='error', 
                              desc='Not found', 
                              status=HTTP_404_NOT_FOUND)
+
+
+class BadRequestView(APIView):
+    def get(self, request, *args, **kwargs):
+        _logger.debug('BadRequestView')
+        return make_response(request_id=request.id, 
+                             result='error', 
+                             desc='Bad request', 
+                             status=HTTP_400_BAD_REQUEST)
+
+
+class InternalServerErrorView(APIView):
+    def get(self, request, *args, **kwargs):
+        _logger.debug('InternalServerErrorView')
+        return make_response(request_id=request.id, 
+                             result='error', 
+                             desc='Internal server error', 
+                             status=HTTP_500_INTERNAL_SERVER_ERROR)
