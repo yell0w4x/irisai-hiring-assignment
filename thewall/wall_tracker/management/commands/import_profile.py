@@ -1,9 +1,9 @@
 from django.core.management.base import BaseCommand
-from wall_tracker.models import WallProfile, WALL_MIN_HEIGHT, WALL_MAX_HEIGHT
+from wall_tracker.models import WallProfile, MIN_WALL_HEIGHT, MAX_WALL_HEIGHT
 
 
 class Command(BaseCommand):
-    help = 'Add wall profile data to the database'
+    help = 'Add wall profile data to the database. Please note existing data will be overwritten.'
 
     def add_arguments(self, parser):
         parser.add_argument('input_file', type=str)
@@ -17,9 +17,9 @@ class Command(BaseCommand):
                 pid: [int(h) for h in line.strip().split()] for pid, line in enumerate(f, 1) 
             }
 
+        WallProfile.objects.all().delete()
         for profile_id, heights in profiles.items():
-            if any(h < WALL_MIN_HEIGHT or h > WALL_MAX_HEIGHT for h in heights):
+            if any(h < MIN_WALL_HEIGHT or h > MAX_WALL_HEIGHT for h in heights):
                 raise ValueError(f'Invalid height value given, profile id: [{profile_id}]')
 
-            p = WallProfile(id=profile_id, initial_heights=heights)
-            p.save()
+            p = WallProfile.objects.create(id=profile_id, initial_heights=heights)

@@ -1,8 +1,8 @@
 from django.db import models
 
 
-WALL_MIN_HEIGHT=0
-WALL_MAX_HEIGHT=30
+MIN_WALL_HEIGHT=0
+MAX_WALL_HEIGHT=30
 
 
 class WallProfile(models.Model):
