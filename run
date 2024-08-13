@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR=$(realpath "$(dirname "${0}")")
+VENV_DIR=${SCRIPT_DIR}/.venv
+MANAGE_PY="${SCRIPT_DIR}/src/manage.py"
+
+
+usage() {
+cat << EOF
+Run app dev server or tests.
+
+Usage:
+    ${0} [COMMANDS] [OPTIONS]
+
+Commands:
+    test           Run tests
+
+Options:
+    --profile FILE Load wall profiles into database from file before run server
+    --debug        Set bash 'x' option
+    --help         Shows help message
+
+For extra Django CLI use 'python3 ${MANAGE_PY}'
+EOF
+}
+
+set -eu
+
+ensure_env() {
+    if [ -d "${VENV_DIR}" ]; then
+        source "${VENV_DIR}/bin/activate"
+    else
+        python3 -m venv "${VENV_DIR}" && \
+            source "${VENV_DIR}/bin/activate" && \
+            pip3 install -r "${SCRIPT_DIR}/requirements.txt"
+    fi    
+}
+
+while [ "${#}" -gt 0 ]; do
+    case "${1}" in
+        -h|--help)
+            usage
+            exit
+            ;;
+
+        test)
+            ensure_env
+            cd "${SCRIPT_DIR}/src" && DEPS_LOG_LEVEL=ERROR pytest
+            exit 0
+            ;;
+
+        --profile)
+            shift
+            FILE="${1}"
+            ensure_env
+            python3 "${MANAGE_PY}" import_profile "${FILE}"
+            ;;
+
+        --debug)
+            set -x
+            ;;
+
+        *)
+            echo -e "\e[31mUnrecoginzed argument: [${1}]\e[0m"
+            usage
+            exit 1
+            ;;
+    esac
+    
+   shift
+done
+
+ensure_env
+python3 "${MANAGE_PY}" runserver
