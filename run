@@ -2,20 +2,23 @@
 
 SCRIPT_DIR=$(realpath "$(dirname "${0}")")
 VENV_DIR=${SCRIPT_DIR}/.venv
-MANAGE_PY="${SCRIPT_DIR}/src/manage.py"
+SRC_DIR="${SCRIPT_DIR}/src"
+MANAGE_PY="${SRC_DIR}/manage.py"
 
 
 usage() {
 cat << EOF
-Run app dev server or tests.
+Runs either app or tests.
 
 Usage:
     ${0} [COMMANDS] [OPTIONS]
 
 Commands:
     test           Run tests
+    e2e-test       Run e2e tests
 
 Options:
+    --dev          Run dev server
     --profile FILE Load wall profiles into database from file before run server
     --debug        Set bash 'x' option
     --help         Shows help message
@@ -33,6 +36,10 @@ ensure_env() {
         python3 -m venv "${VENV_DIR}" && \
             source "${VENV_DIR}/bin/activate" && \
             pip3 install -r "${SCRIPT_DIR}/requirements.txt"
+
+        if [ "${?}" -ne 0 ]; then 
+            rm -rf "${VENV_DIR}"
+        fi 
     fi    
 }
 
@@ -45,15 +52,21 @@ while [ "${#}" -gt 0 ]; do
 
         test)
             ensure_env
-            cd "${SCRIPT_DIR}/src" && DEPS_LOG_LEVEL=ERROR pytest
+            cd "${SRC_DIR}" && DEPS_LOG_LEVEL=ERROR pytest
             exit 0
+            ;;
+
+        e2e-test)
+            E2E_TEST=1
+            ;;
+
+        --dev)
+            DEV=1
             ;;
 
         --profile)
             shift
-            FILE="${1}"
-            ensure_env
-            python3 "${MANAGE_PY}" import_profile "${FILE}"
+            WALLS_FILE="${1}"
             ;;
 
         --debug)
@@ -61,7 +74,7 @@ while [ "${#}" -gt 0 ]; do
             ;;
 
         *)
-            echo -e "\e[31mUnrecoginzed argument: [${1}]\e[0m"
+            echo -e "\e[31mUnrecognized argument: [${1}]\e[0m"
             usage
             exit 1
             ;;
@@ -70,5 +83,52 @@ while [ "${#}" -gt 0 ]; do
    shift
 done
 
+APP_CONAINER_NAME=e2e-app-instance
+E2E_CONTAINER_NAME=e2e-tests-instance
+
+clean_up() {
+    if [ -n "${REMOVED+x}" ]; then
+        return
+    fi
+    REMOVED=1
+    popd &> /dev/null
+    docker stop "${APP_CONAINER_NAME}" &>/dev/null || true
+    docker stop "${E2E_CONTAINER_NAME}" &>/dev/null || true
+    docker rm "${APP_CONAINER_NAME}" &>/dev/null || true
+    docker rm "${E2E_CONTAINER_NAME}" &>/dev/null || true
+}
+
+on_exit() {
+    clean_up
+}
+
+on_error() {
+    clean_up
+}
+
+trap on_exit EXIT
+trap 'on_error ${?} ${LINENO}' ERR
+
+pushd "${SCRIPT_DIR}" &> /dev/null
+
+if [ -n "${E2E_TEST+x}" ]; then
+    echo -e "\e[36mRunning e2e tests...\e[0m"
+    docker compose build
+    docker compose run --name "${APP_CONAINER_NAME}" --detach wall_tracker /app/run --profile /app/wall-profiles.txt
+    docker compose run --name "${E2E_CONTAINER_NAME}" e2e_tests
+    exit 0
+fi
+
 ensure_env
-python3 "${MANAGE_PY}" runserver
+python3 "${MANAGE_PY}" makemigrations
+python3 "${MANAGE_PY}" migrate
+
+if [ -n ${WALLS_FILE+x} ]; then
+    python3 "${MANAGE_PY}" import_profile "${WALLS_FILE}"
+fi
+
+if [ -n "${DEV+x}" ]; then
+    python3 "${MANAGE_PY}" runserver
+else 
+    cd "${SRC_DIR}" && gunicorn --bind '0.0.0.0:8000' thewall:application
+fi 

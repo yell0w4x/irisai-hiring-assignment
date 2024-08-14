@@ -1,0 +1,13 @@
+version: "3"
+
+services:
+  e2e_tests:
+    container_name: e2e_tests
+    build:
+      dockerfile: e2e-tests.Dockerfile
+    restart: always
+
+  wall_tracker:
+    container_name: wall_tracker
+    restart: always
+    build: "."

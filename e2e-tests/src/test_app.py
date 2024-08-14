@@ -1,62 +1,59 @@
 import pytest
 
-from django.urls import reverse
-from wall_tracker.models import WallProfile
-from wall_tracker.stuff import setup_logger
 import logging
-import json
 import re
+import requests
+from urllib.parse import urljoin
+import time
+import subprocess
 
-from wall_tracker.views import ICE_VOLUME_PER_DAY, ICE_UNIT_COST
+
+ICE_VOLUME_PER_DAY = 195
+ICE_UNIT_COST = 1900
 
 
 _logger = logging.getLogger(__name__)
 
 
+APP_ENDPOINT = 'e2e-app-instance:8000'
+@pytest.fixture
+def app_endpoint():
+    return APP_ENDPOINT
+
+
 @pytest.fixture(autouse=True)
-def logger_setup():
-    setup_logger()
+def wait_for_sut(app_endpoint):
+    subprocess.check_call(['/test/wait-for-it.sh', app_endpoint, '-t', '10'])
 
 
 @pytest.fixture
-def clear_db():
-    WallProfile.objects.all().delete()
+def sut_base_url(app_endpoint):
+    # return 'http://localhost:8000'
+    return f'http://{app_endpoint}'
 
 
-@pytest.fixture
-def profiles(clear_db):
-    profile1 = WallProfile.objects.create(id=1, initial_heights=[21, 25, 28])
-    profile2 = WallProfile.objects.create(id=2, initial_heights=[17])
-    profile3 = WallProfile.objects.create(id=3, initial_heights=[17, 22, 17, 19, 17])
-    return profile1, profile2, profile3
-
-
-@pytest.mark.parametrize('url', ['/profiles', 
+@pytest.mark.parametrize('path', ['/profiles', 
                                  '/profiles/',
                                  '/profiles/1/days/-1', 
-                                 'profiles/5/days/1/',
+                                 'profiles/10/days/1/',
                                  '/profiles/-1/days/1',
                                  '/asdf',
                                  ])
-@pytest.mark.django_db(databases=['TEST', 'default'])
-def test_must_return_404_not_found_for_any_unknown_url(client, profiles, url):
-    response = client.get(url)
-
+def test_must_return_404_not_found_for_any_unknown_url(sut_base_url, path):
+    response = requests.get(urljoin(sut_base_url, path))
+    data = response.json()
     assert response.status_code == 404
-
-    data = json.loads(response.content.decode('utf-8'))
     assert data['data'] == dict()
     assert data['meta']['result'] == 'error'
     assert data['meta']['desc'] == 'Not found'
     assert re.match(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', data['meta']['id']) is not None
 
 
-@pytest.mark.parametrize('url', ['/profiles/1/days/1', '/asdf'])
-def test_must_return_405_method_not_allowed_for_POST_request(client, url):
-    response = client.post(url)
+@pytest.mark.parametrize('path', ['/profiles/1/days/1', '/asdf'])
+def test_must_return_405_method_not_allowed_for_POST_request(sut_base_url, path):
+    response = requests.post(urljoin(sut_base_url, path))
+    data = response.json()
     assert response.status_code == 405
-
-    data = json.loads(response.content.decode('utf-8'))
     assert data['data'] == dict()
     assert data['meta']['result'] == 'error'
     assert data['meta']['desc'] == 'Method not allowed'
@@ -79,16 +76,10 @@ DAILY_ICE_VOL = ICE_VOLUME_PER_DAY
                                                          # add some extra days where work is already completed
                                                          *[(3, day, DAILY_ICE_VOL*0) for day in range(14, 17)], 
                                                          ])
-@pytest.mark.django_db(databases=['TEST', 'default'])
-def test_profile_daily_ice_amount(client, profiles, profile_id, day, ice_amount):
-    _logger.debug(list(item.initial_heights for item in WallProfile.objects.all()))
-
-    assert WallProfile.objects.count() == 3
-    url = reverse('daily-ice-amount', kwargs=dict(profile_id=profile_id, day=day))
-    response = client.get(url)
+def test_profile_daily_ice_amount(sut_base_url, profile_id, day, ice_amount):
+    response = requests.get(urljoin(sut_base_url, f'/profiles/{profile_id}/days/{day}'))
     assert response.status_code == 200
-
-    data = json.loads(response.content.decode('utf-8'))
+    data = response.json()
     assert data['data']['day'] == day
     assert data['data']['ice_amount'] == ice_amount
     assert data['meta']['result'] == 'success'
@@ -111,13 +102,10 @@ DAILY_COST = DAILY_ICE_VOL * ICE_UNIT_COST
                                                    # add some extra days where work is already completed
                                                    *[(3, day, DAILY_COST*0) for day in range(14, 17)], 
                                                    ])
-@pytest.mark.django_db(databases=['TEST', 'default'])
-def test_profile_daily_cost(client, profiles, profile_id, day, cost):
-    url = reverse('daily-cost', kwargs=dict(profile_id=profile_id, day=day))
-    response = client.get(url)
+def test_profile_daily_cost(sut_base_url, profile_id, day, cost):
+    response = requests.get(urljoin(sut_base_url, f'/profiles/{profile_id}/overview/{day}'))
     assert response.status_code == 200
-
-    data = json.loads(response.content.decode('utf-8'))
+    data = response.json()
     assert data['data']['day'] == day
     assert data['data']['cost'] == cost
     assert data['meta']['result'] == 'success'
@@ -136,26 +124,20 @@ def test_profile_daily_cost(client, profiles, profile_id, day, cost):
                                        (13, 0 + DAILY_COST + DAILY_COST*3),
                                        (14, 0 + 0 + 0),
                                         ])
-@pytest.mark.django_db(databases=['TEST', 'default'])
-def test_all_profiles_daily_cost(client, profiles, day, cost):
-    url = reverse('all-profiles-daily-cost', kwargs=dict(day=day))
-    response = client.get(url)
+def test_all_profiles_daily_cost(sut_base_url, day, cost):
+    response = requests.get(urljoin(sut_base_url, f'/profiles/overview/{day}'))
     assert response.status_code == 200
-
-    data = json.loads(response.content.decode('utf-8'))
+    data = response.json()
     assert data['data']['day'] == day
     assert data['data']['cost'] == cost
     assert data['meta']['result'] == 'success'
     assert re.match(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', data['meta']['id']) is not None
 
 
-@pytest.mark.django_db(databases=['TEST', 'default'])
-def test_total_wall_cost(client, profiles):
-    url = reverse('total-wall-cost')
-    response = client.get(url)
+def test_total_wall_cost(sut_base_url):
+    response = requests.get(urljoin(sut_base_url, f'/profiles/overview/'))
     assert response.status_code == 200
-
-    data = json.loads(response.content.decode('utf-8'))
+    data = response.json()
     assert data['data']['day'] == None
     assert data['data']['cost'] == 32_233_500
     assert data['meta']['result'] == 'success'

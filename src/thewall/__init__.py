@@ -1,0 +1,1 @@
+from thewall.wsgi import application

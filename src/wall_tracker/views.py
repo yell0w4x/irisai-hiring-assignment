@@ -3,7 +3,6 @@ from rest_framework.views import APIView
 from django.http import JsonResponse
 from django.http import Http404
 from rest_framework.status import HTTP_404_NOT_FOUND, HTTP_400_BAD_REQUEST, HTTP_500_INTERNAL_SERVER_ERROR
-from itertools import accumulate
 
 from wall_tracker.models import WallProfile, MIN_WALL_HEIGHT, MAX_WALL_HEIGHT
 from wall_tracker.stuff import make_response
@@ -40,13 +39,7 @@ def check_value(val):
 
 def get_total_daily_volume(day, heights):
     assert day > 0
-    all_teams_vol = 0
-    for h in heights:
-        reminder = MAX_WALL_HEIGHT - (h + day)
-        if reminder >= 0:
-            all_teams_vol += ICE_VOLUME_PER_DAY
-
-    return all_teams_vol
+    return sum(ICE_VOLUME_PER_DAY for h in heights if (MAX_WALL_HEIGHT - (h + day)) >= 0)
 
 
 class ProfileDailyIceVolumeView(APIView):
