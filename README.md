@@ -1,6 +1,7 @@
 # The Iris.ai test assignment
 
-Built with Django 5.1 and Python 3.11.
+Built with Django 5.1 and Python 3.11. 
+Python virtual env support is necessary to run app.
 
 The repo cli is the `./run` script.
 ```text
@@ -34,6 +35,8 @@ I ran into that Django test client and the infrastructure behind it
 as turns out sometimes behaves differently compared to real app. 
 So after making integration tests I decided to add real e2e tests 
 to be sure that the app works as necessary.
+Docker and docker compose are mandatory to have to run these tests.
+To install it on Ubuntu: `wget -qO- https://get.docker.com | sudo bash`
 
 ```
 $ ./run e2e-test
