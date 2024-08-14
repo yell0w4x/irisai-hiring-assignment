@@ -123,7 +123,7 @@ ensure_env
 python3 "${MANAGE_PY}" makemigrations
 python3 "${MANAGE_PY}" migrate
 
-if [ -n ${WALLS_FILE+x} ]; then
+if [ -n "${WALLS_FILE+x}" ]; then
     python3 "${MANAGE_PY}" import_profile "${WALLS_FILE}"
 fi
 
