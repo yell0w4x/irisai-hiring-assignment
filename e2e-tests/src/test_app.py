@@ -23,12 +23,11 @@ def app_endpoint():
 
 @pytest.fixture(autouse=True)
 def wait_for_sut(app_endpoint):
-    subprocess.check_call(['/test/wait-for-it.sh', app_endpoint, '-t', '10'])
+    subprocess.check_call(['/test/wait-for-it.sh', app_endpoint, '-t', '30'])
 
 
 @pytest.fixture
 def sut_base_url(app_endpoint):
-    # return 'http://localhost:8000'
     return f'http://{app_endpoint}'
 
 

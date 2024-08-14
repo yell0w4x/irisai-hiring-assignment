@@ -26,7 +26,7 @@ For extra Django CLI use 'python3 /home/q/work/irisai/src/manage.py'
 
 To run integration tests issue
 
-```
+```text
 $ ./run test
 ```
 
