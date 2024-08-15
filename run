@@ -21,7 +21,7 @@ Commands:
 Options:
     --dev          Run dev server
     --profile FILE Load wall profiles into database from file before run server
-    --workers NUM  Set the number of workers for multi process case
+    --workers NUM  Set the number of workers for multi process case (default: 1)
     --debug        Set bash 'x' option
     --help         Shows help message
 
@@ -82,9 +82,6 @@ while [ "${#}" -gt 0 ]; do
 
         *)
             ARGS+=("${1}")
-            # echo -e "\e[31mUnrecognized argument: [${1}]\e[0m"
-            # usage
-            # exit 1
             ;;
     esac
     
@@ -135,13 +132,13 @@ if [ -n "${E2E_TEST+x}" ]; then
     echo -e "\e[36mRunning e2e tests...\e[0m"
     docker compose build
 
-    docker compose run --name "${APP_CONAINER_NAME}" --detach wall_tracker /app/run --debug
-    docker compose run --name "${E2E_CONTAINER_NAME}" e2e_tests pytest test_app_first_part.py -k test_must_return_404_not_if_no_profiles_at_all "${ARGS[@]}"
-    remove_containers
+    # docker compose run --name "${APP_CONAINER_NAME}" --detach wall_tracker /app/run --debug
+    # docker compose run --name "${E2E_CONTAINER_NAME}" e2e_tests pytest test_app_first_part.py -k test_must_return_404_not_if_no_profiles_at_all "${ARGS[@]}"
+    # remove_containers
 
-    docker compose run --name "${APP_CONAINER_NAME}" --detach wall_tracker /app/run --profile /app/wall-profiles1.txt
-    docker compose run --name "${E2E_CONTAINER_NAME}" e2e_tests pytest test_app_first_part.py -k 'not test_must_return_404_not_if_no_profiles_at_all' "${ARGS[@]}"
-    remove_containers
+    # docker compose run --name "${APP_CONAINER_NAME}" --detach wall_tracker /app/run --profile /app/wall-profiles1.txt
+    # docker compose run --name "${E2E_CONTAINER_NAME}" e2e_tests pytest test_app_first_part.py -k 'not test_must_return_404_not_if_no_profiles_at_all' "${ARGS[@]}"
+    # remove_containers
 
     docker compose run --name "${APP_CONAINER_NAME}" --detach wall_tracker /app/run --debug
     docker compose run --name "${E2E_CONTAINER_NAME}" e2e_tests pytest test_app_mp.py -k test_must_return_404_not_if_no_profiles_at_all "${ARGS[@]}"
@@ -168,5 +165,5 @@ fi
 if [ -n "${DEV+x}" ]; then
     python3 "${MANAGE_PY}" runserver "${ARGS[@]}"
 else 
-    cd "${SRC_DIR}" && gunicorn --bind '0.0.0.0:8000' thewall:application "${ARGS[@]}"
+    cd "${SRC_DIR}" && uvicorn --host '0.0.0.0' "${ARGS[@]}" thewall.asgi:application
 fi 

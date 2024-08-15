@@ -78,7 +78,7 @@ DAILY_ICE_VOL = ICE_VOLUME_PER_DAY
                                                          *[(3, day, DAILY_ICE_VOL*0) for day in range(14, 17)], 
                                                          ])
 def test_profile_daily_ice_amount(sut_base_url, profile_id, day, ice_amount):
-    response = requests.get(urljoin(sut_base_url, f'/profiles/{profile_id}/days/{day}'))
+    response = requests.get(urljoin(sut_base_url, f'/profiles/{profile_id}/days/{day}/'))
     assert response.status_code == 200
     data = response.json()
     assert data['data']['day'] == day
@@ -104,7 +104,7 @@ DAILY_COST = DAILY_ICE_VOL * ICE_UNIT_COST
                                                    *[(3, day, DAILY_COST*0) for day in range(14, 17)], 
                                                    ])
 def test_profile_daily_cost(sut_base_url, profile_id, day, cost):
-    response = requests.get(urljoin(sut_base_url, f'/profiles/{profile_id}/overview/{day}'))
+    response = requests.get(urljoin(sut_base_url, f'/profiles/{profile_id}/overview/{day}/'))
     assert response.status_code == 200
     data = response.json()
     assert data['data']['day'] == day
@@ -126,7 +126,7 @@ def test_profile_daily_cost(sut_base_url, profile_id, day, cost):
                                        (14, 0 + 0 + 0),
                                         ])
 def test_all_profiles_daily_cost(sut_base_url, day, cost):
-    response = requests.get(urljoin(sut_base_url, f'/profiles/overview/{day}'))
+    response = requests.get(urljoin(sut_base_url, f'/profiles/overview/{day}/'))
     assert response.status_code == 200
     data = response.json()
     assert data['data']['day'] == day

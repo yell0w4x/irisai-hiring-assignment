@@ -9,7 +9,7 @@ $ ./run --help
 Runs either app or tests.
 
 Usage:
-    ./run [COMMANDS] [OPTIONS]
+    ./run [COMMANDS] [OPTIONS] [EXTR_ARGS]
 
 Commands:
     test           Run tests
@@ -18,6 +18,7 @@ Commands:
 Options:
     --dev          Run dev server
     --profile FILE Load wall profiles into database from file before run server
+    --workers NUM  Set the number of workers for multi process case (default: 1)
     --debug        Set bash 'x' option
     --help         Shows help message
 
@@ -53,9 +54,14 @@ To run app dev server
 $ ./run --dev
 ```
 
-To import profile before run server
+To import profile before server run
 ```
 $ ./run --profile wall-profiles.txt
+```
+
+To import profile and set number of workers before run server
+```text
+./run --profile e2e-tests/wall-profiles2.txt --workers 5
 ```
 
 Endpoints
@@ -64,4 +70,11 @@ Endpoints
 /profiles/<int:proflie_id>/overview/<int:day>/
 /profiles/overview/<int:day>/
 /profiles/overview/
+```
+For multiprocess version endpoints are
+```text
+/mp/profiles/<int:proflie_id>/days/<int:day>/
+/mp/profiles/<int:proflie_id>/overview/<int:day>/
+/mp/profiles/overview/<int:day>/
+/mp/profiles/overview/
 ```

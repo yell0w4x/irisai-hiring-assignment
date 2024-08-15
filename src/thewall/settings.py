@@ -24,7 +24,7 @@ LOG_DIR = BASE_DIR / '.log'
 SECRET_KEY = 'django-insecure-twsz0r$&hnv218f&13)#+$brk@r4*k_qyx4hr(nk39o&qxb0g0'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -44,6 +44,30 @@ MIDDLEWARE = [
     'wall_tracker.middleware.DisallowPostMiddleware',
     'django.middleware.common.CommonMiddleware',
 ]
+
+# INSTALLED_APPS = [
+#     'wall_tracker',
+#     'wall_tracker_mp',
+#     'rest_framework',
+#     'django.contrib.admin',
+#     'django.contrib.auth',
+#     'django.contrib.contenttypes',
+#     'django.contrib.sessions',
+#     'django.contrib.messages',
+#     'django.contrib.staticfiles',
+# ]
+
+# MIDDLEWARE = [
+#     'django.middleware.security.SecurityMiddleware',
+#     'django.contrib.sessions.middleware.SessionMiddleware',
+#     'django.middleware.common.CommonMiddleware',
+#     'django.middleware.csrf.CsrfViewMiddleware',
+#     'django.contrib.auth.middleware.AuthenticationMiddleware',
+#     'django.contrib.messages.middleware.MessageMiddleware',
+#     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+#     'wall_tracker.middleware.RequestIdMiddleware',
+#     'wall_tracker.middleware.DisallowPostMiddleware',
+# ]
 
 ROOT_URLCONF = 'thewall.urls'
 

@@ -25,11 +25,11 @@ ICE_UNIT_COST = 1900
 def start_process():
     global manager
     if manager is None:
-        from wall_tracker.models import WallProfile
+        from wall_tracker.models import WallProfile, TeamsNumber
 
         profiles = [list(p.initial_heights) for p in WallProfile.objects.all()]
-        # workers_num = TeamsNumber.objects.all()[0].teams
-        workers_num = 2
+        teams = TeamsNumber.objects.all()
+        workers_num = 1 if len(teams) == 0 else teams[0].teams
         manager = Manager(profiles, workers_num)
         manager.start()
         while not manager.is_completed():
@@ -139,3 +139,4 @@ class TotalWallCostView(View):
                                  result='error', 
                                  desc='Not found', 
                                  status=HTTP_404_NOT_FOUND)
+
