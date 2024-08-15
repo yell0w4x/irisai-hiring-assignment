@@ -73,6 +73,9 @@ class AllProfilesDailyCostView(APIView):
                                  desc='Internal server error', 
                                  status=HTTP_500_INTERNAL_SERVER_ERROR)
 
+        if len(profiles) == 0:
+            return NotFoundView().get(request)
+
         cost = 0
         for profile in profiles:
             cost += get_total_daily_volume(day, profile.initial_heights) * ICE_UNIT_COST
@@ -89,6 +92,8 @@ class TotalWallCostView(APIView):
                                  result='error', 
                                  desc='Internal server error', 
                                  status=HTTP_500_INTERNAL_SERVER_ERROR)
+        if len(profiles) == 0:
+            return NotFoundView().get(request)
 
         cost = 0
         for profile in profiles:

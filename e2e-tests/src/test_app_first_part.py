@@ -143,3 +143,14 @@ def test_total_wall_cost(sut_base_url):
     assert data['data']['cost'] == 32_233_500
     assert data['meta']['result'] == 'success'
     assert re.match(UUID_REGEX, data['meta']['id']) is not None
+
+
+@pytest.mark.parametrize('path', ['/profiles/1/days/1/', '/profiles/1/overview/1/', '/profiles/overview/1/', '/profiles/overview/'])
+def test_must_return_404_not_if_no_profiles_at_all(sut_base_url, path):
+    response = requests.get(urljoin(sut_base_url, path))
+    data = response.json()
+    assert response.status_code == 404
+    assert data['data'] == dict()
+    assert data['meta']['result'] == 'error'
+    assert data['meta']['desc'] == 'Not found'
+    assert re.match(UUID_REGEX, data['meta']['id']) is not None    

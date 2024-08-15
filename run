@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
 SCRIPT_DIR=$(realpath "$(dirname "${0}")")
-VENV_DIR=${SCRIPT_DIR}/.venv
+VENV_DIR="${SCRIPT_DIR}/.venv"
 SRC_DIR="${SCRIPT_DIR}/src"
 MANAGE_PY="${SRC_DIR}/manage.py"
+ARGS=()
 
 
 usage() {
@@ -11,7 +12,7 @@ cat << EOF
 Runs either app or tests.
 
 Usage:
-    ${0} [COMMANDS] [OPTIONS]
+    ${0} [COMMANDS] [OPTIONS] [EXTR_ARGS]
 
 Commands:
     test           Run tests
@@ -20,6 +21,7 @@ Commands:
 Options:
     --dev          Run dev server
     --profile FILE Load wall profiles into database from file before run server
+    --workers NUM  Set the number of workers for multi process case
     --debug        Set bash 'x' option
     --help         Shows help message
 
@@ -39,6 +41,7 @@ ensure_env() {
 
         if [ "${?}" -ne 0 ]; then 
             rm -rf "${VENV_DIR}"
+            echo -e "\e[31mVirtual env setup error\e[0m"
             exit 1
         fi 
     fi    
@@ -52,11 +55,7 @@ while [ "${#}" -gt 0 ]; do
             ;;
 
         test)
-            ensure_env
-            python3 "${MANAGE_PY}" makemigrations
-            python3 "${MANAGE_PY}" migrate
-            cd "${SRC_DIR}" && DEPS_LOG_LEVEL=ERROR pytest
-            exit 0
+            TEST=1
             ;;
 
         e2e-test)
@@ -72,14 +71,20 @@ while [ "${#}" -gt 0 ]; do
             WALLS_FILE="${1}"
             ;;
 
+        --workers)
+            shift
+            WORKERS_NUM="${1}"
+            ;;
+
         --debug)
             set -x
             ;;
 
         *)
-            echo -e "\e[31mUnrecognized argument: [${1}]\e[0m"
-            usage
-            exit 1
+            ARGS+=("${1}")
+            # echo -e "\e[31mUnrecognized argument: [${1}]\e[0m"
+            # usage
+            # exit 1
             ;;
     esac
     
@@ -89,16 +94,20 @@ done
 APP_CONAINER_NAME=e2e-app-instance
 E2E_CONTAINER_NAME=e2e-tests-instance
 
+remove_containers() {
+    docker stop "${APP_CONAINER_NAME}" &>/dev/null || true
+    docker stop "${E2E_CONTAINER_NAME}" &>/dev/null || true
+    docker rm "${APP_CONAINER_NAME}" &>/dev/null || true
+    docker rm "${E2E_CONTAINER_NAME}" &>/dev/null || true
+}
+
 clean_up() {
     if [ -n "${REMOVED+x}" ]; then
         return
     fi
     REMOVED=1
     popd &> /dev/null
-    docker stop "${APP_CONAINER_NAME}" &>/dev/null || true
-    docker stop "${E2E_CONTAINER_NAME}" &>/dev/null || true
-    docker rm "${APP_CONAINER_NAME}" &>/dev/null || true
-    docker rm "${E2E_CONTAINER_NAME}" &>/dev/null || true
+    remove_containers    
 }
 
 on_exit() {
@@ -114,11 +123,33 @@ trap 'on_error ${?} ${LINENO}' ERR
 
 pushd "${SCRIPT_DIR}" &> /dev/null
 
+if [ -n "${TEST+x}" ]; then
+    ensure_env
+    python3 "${MANAGE_PY}" makemigrations
+    python3 "${MANAGE_PY}" migrate
+    cd "${SRC_DIR}" && DEPS_LOG_LEVEL=ERROR pytest "${ARGS[@]}"
+    exit 0
+fi
+
 if [ -n "${E2E_TEST+x}" ]; then
     echo -e "\e[36mRunning e2e tests...\e[0m"
     docker compose build
-    docker compose run --name "${APP_CONAINER_NAME}" --detach wall_tracker /app/run --profile /app/wall-profiles.txt
-    docker compose run --name "${E2E_CONTAINER_NAME}" e2e_tests
+
+    docker compose run --name "${APP_CONAINER_NAME}" --detach wall_tracker /app/run --debug
+    docker compose run --name "${E2E_CONTAINER_NAME}" e2e_tests pytest test_app_first_part.py -k test_must_return_404_not_if_no_profiles_at_all "${ARGS[@]}"
+    remove_containers
+
+    docker compose run --name "${APP_CONAINER_NAME}" --detach wall_tracker /app/run --profile /app/wall-profiles1.txt
+    docker compose run --name "${E2E_CONTAINER_NAME}" e2e_tests pytest test_app_first_part.py -k 'not test_must_return_404_not_if_no_profiles_at_all' "${ARGS[@]}"
+    remove_containers
+
+    docker compose run --name "${APP_CONAINER_NAME}" --detach wall_tracker /app/run --debug
+    docker compose run --name "${E2E_CONTAINER_NAME}" e2e_tests pytest test_app_mp.py -k test_must_return_404_not_if_no_profiles_at_all "${ARGS[@]}"
+    remove_containers
+
+    docker compose run --name "${APP_CONAINER_NAME}" --detach wall_tracker /app/run --profile /app/wall-profiles2.txt --workers 10
+    docker compose run --name "${E2E_CONTAINER_NAME}" e2e_tests pytest test_app_mp.py -k 'not test_must_return_404_not_if_no_profiles_at_all' "${ARGS[@]}"
+    remove_containers
     exit 0
 fi
 
@@ -130,8 +161,12 @@ if [ -n "${WALLS_FILE+x}" ]; then
     python3 "${MANAGE_PY}" import_profile "${WALLS_FILE}"
 fi
 
+if [ -n "${WORKERS_NUM+x}" ]; then
+    python3 "${MANAGE_PY}" teams_num "${WORKERS_NUM}"
+fi
+
 if [ -n "${DEV+x}" ]; then
-    python3 "${MANAGE_PY}" runserver
+    python3 "${MANAGE_PY}" runserver "${ARGS[@]}"
 else 
-    cd "${SRC_DIR}" && gunicorn --bind '0.0.0.0:8000' thewall:application
+    cd "${SRC_DIR}" && gunicorn --bind '0.0.0.0:8000' thewall:application "${ARGS[@]}"
 fi 

@@ -31,6 +31,9 @@ def profiles(clear_db):
     return profile1, profile2, profile3
 
 
+UUID_REGEX = r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+
+
 @pytest.mark.parametrize('url', ['/profiles', 
                                  '/profiles/',
                                  '/profiles/1/days/-1', 
@@ -44,11 +47,11 @@ def test_must_return_404_not_found_for_any_unknown_url(client, profiles, url):
 
     assert response.status_code == 404
 
-    data = json.loads(response.content.decode('utf-8'))
+    data = response.json()
     assert data['data'] == dict()
     assert data['meta']['result'] == 'error'
     assert data['meta']['desc'] == 'Not found'
-    assert re.match(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', data['meta']['id']) is not None
+    assert re.match(UUID_REGEX, data['meta']['id']) is not None
 
 
 @pytest.mark.parametrize('url', ['/profiles/1/days/1', '/asdf'])
@@ -56,11 +59,11 @@ def test_must_return_405_method_not_allowed_for_POST_request(client, url):
     response = client.post(url)
     assert response.status_code == 405
 
-    data = json.loads(response.content.decode('utf-8'))
+    data = response.json()
     assert data['data'] == dict()
     assert data['meta']['result'] == 'error'
     assert data['meta']['desc'] == 'Method not allowed'
-    assert re.match(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', data['meta']['id']) is not None
+    assert re.match(UUID_REGEX, data['meta']['id']) is not None
 
 
 DAILY_ICE_VOL = ICE_VOLUME_PER_DAY
@@ -88,11 +91,11 @@ def test_profile_daily_ice_amount(client, profiles, profile_id, day, ice_amount)
     response = client.get(url)
     assert response.status_code == 200
 
-    data = json.loads(response.content.decode('utf-8'))
+    data = response.json()
     assert data['data']['day'] == day
     assert data['data']['ice_amount'] == ice_amount
     assert data['meta']['result'] == 'success'
-    assert re.match(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', data['meta']['id']) is not None
+    assert re.match(UUID_REGEX, data['meta']['id']) is not None
 
 
 DAILY_COST = DAILY_ICE_VOL * ICE_UNIT_COST
@@ -117,11 +120,11 @@ def test_profile_daily_cost(client, profiles, profile_id, day, cost):
     response = client.get(url)
     assert response.status_code == 200
 
-    data = json.loads(response.content.decode('utf-8'))
+    data = response.json()
     assert data['data']['day'] == day
     assert data['data']['cost'] == cost
     assert data['meta']['result'] == 'success'
-    assert re.match(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', data['meta']['id']) is not None
+    assert re.match(UUID_REGEX, data['meta']['id']) is not None
 
 
 @pytest.mark.parametrize('day, cost', [(1, DAILY_COST*3 + DAILY_COST + DAILY_COST*5), 
@@ -142,11 +145,11 @@ def test_all_profiles_daily_cost(client, profiles, day, cost):
     response = client.get(url)
     assert response.status_code == 200
 
-    data = json.loads(response.content.decode('utf-8'))
+    data = response.json()
     assert data['data']['day'] == day
     assert data['data']['cost'] == cost
     assert data['meta']['result'] == 'success'
-    assert re.match(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', data['meta']['id']) is not None
+    assert re.match(UUID_REGEX, data['meta']['id']) is not None
 
 
 @pytest.mark.django_db(databases=['TEST', 'default'])
@@ -155,8 +158,20 @@ def test_total_wall_cost(client, profiles):
     response = client.get(url)
     assert response.status_code == 200
 
-    data = json.loads(response.content.decode('utf-8'))
+    data = response.json()
     assert data['data']['day'] == None
     assert data['data']['cost'] == 32_233_500
     assert data['meta']['result'] == 'success'
-    assert re.match(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', data['meta']['id']) is not None
+    assert re.match(UUID_REGEX, data['meta']['id']) is not None
+
+
+@pytest.mark.django_db(databases=['TEST', 'default'])
+@pytest.mark.parametrize('path', ['/profiles/1/days/1/', '/profiles/1/overview/1/', '/profiles/overview/1/', '/profiles/overview/'])
+def test_must_return_404_not_if_no_profiles_at_all(clear_db, client, path):
+    response = client.get(path)
+    data = response.json()
+    assert response.status_code == 404
+    assert data['data'] == dict()
+    assert data['meta']['result'] == 'error'
+    assert data['meta']['desc'] == 'Not found'
+    assert re.match(UUID_REGEX, data['meta']['id']) is not None    

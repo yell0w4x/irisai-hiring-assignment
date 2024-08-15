@@ -74,14 +74,15 @@ def get_days_for_all_profiles(profiles, day):
 class ProfileDailyIceVolumeView(View):
     async def get(self, request, profile_id, day):
         loop = asyncio.get_running_loop()
-        original_profiles = await loop.run_in_executor(None, start_process)
-        profiles_with_days = convert_mp_profiles_with_days(original_profiles)
 
         try:
+            original_profiles = await loop.run_in_executor(None, start_process)
+            profiles_with_days = convert_mp_profiles_with_days(original_profiles)
+
             days = get_days_for_profile(profiles_with_days, profile_id, day)
             ice_amount = days * ICE_VOLUME_PER_DAY
             return make_response(request_id=request.id, data=dict(day=day, ice_amount=ice_amount))
-        except IndexError:
+        except (IndexError, ValueError):
             return make_response(request_id=request.id, 
                                  result='error', 
                                  desc='Not found', 
@@ -91,14 +92,15 @@ class ProfileDailyIceVolumeView(View):
 class ProfileDailyCostView(View):
     async def get(self, request, profile_id, day):
         loop = asyncio.get_running_loop()
-        original_profiles = await loop.run_in_executor(None, start_process)
-        profiles_with_days = convert_mp_profiles_with_days(original_profiles)
 
         try:
+            original_profiles = await loop.run_in_executor(None, start_process)
+            profiles_with_days = convert_mp_profiles_with_days(original_profiles)
+
             days = get_days_for_profile(profiles_with_days, profile_id, day)
             cost = days * ICE_VOLUME_PER_DAY * ICE_UNIT_COST
             return make_response(request_id=request.id, data=dict(day=day, cost=cost))
-        except IndexError:
+        except (IndexError, ValueError):
             return make_response(request_id=request.id, 
                                  result='error', 
                                  desc='Not found', 
@@ -108,14 +110,15 @@ class ProfileDailyCostView(View):
 class AllProfilesDailyCostView(View):
     async def get(self, request, day):
         loop = asyncio.get_running_loop()
-        original_profiles = await loop.run_in_executor(None, start_process)
-        profiles_with_days = convert_mp_profiles_with_days(original_profiles)
 
         try:
+            original_profiles = await loop.run_in_executor(None, start_process)
+            profiles_with_days = convert_mp_profiles_with_days(original_profiles)
+
             days = get_days_for_all_profiles(profiles_with_days, day)
             cost = days * ICE_VOLUME_PER_DAY * ICE_UNIT_COST
             return make_response(request_id=request.id, data=dict(day=day, cost=cost))
-        except IndexError:
+        except (IndexError, ValueError):
             return make_response(request_id=request.id, 
                                  result='error', 
                                  desc='Not found', 
@@ -125,8 +128,14 @@ class AllProfilesDailyCostView(View):
 class TotalWallCostView(View):
     async def get(self, request):
         loop = asyncio.get_running_loop()
-        original_profiles = await loop.run_in_executor(None, start_process)
-        profiles_with_days = convert_mp_profiles_with_days(original_profiles)
-        days = sum(sum(len(sect) - 1 for sect in p) for p in profiles_with_days)
-        cost = days * ICE_VOLUME_PER_DAY * ICE_UNIT_COST
-        return make_response(request_id=request.id, data=dict(day=None, cost=cost))
+        try:
+            original_profiles = await loop.run_in_executor(None, start_process)
+            profiles_with_days = convert_mp_profiles_with_days(original_profiles)
+            days = sum(sum(len(sect) - 1 for sect in p) for p in profiles_with_days)
+            cost = days * ICE_VOLUME_PER_DAY * ICE_UNIT_COST
+            return make_response(request_id=request.id, data=dict(day=None, cost=cost))
+        except ValueError:
+            return make_response(request_id=request.id, 
+                                 result='error', 
+                                 desc='Not found', 
+                                 status=HTTP_404_NOT_FOUND)
