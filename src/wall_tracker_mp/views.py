@@ -73,10 +73,6 @@ class ProfileDailyIceVolumeView(View):
         loop = asyncio.get_running_loop()
         original_profiles = await loop.run_in_executor(None, start_process)
         profiles_with_days = convert_mp_profiles_with_days(original_profiles)
-        # profiles = convert_mp_profiles(original_profiles)
-
-        # print(profiles_with_days)
-        # print(profiles)
 
         try:
             days = get_days_for_profile(profiles_with_days, profile_id, day)

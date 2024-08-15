@@ -39,6 +39,7 @@ ensure_env() {
 
         if [ "${?}" -ne 0 ]; then 
             rm -rf "${VENV_DIR}"
+            exit 1
         fi 
     fi    
 }
@@ -52,6 +53,8 @@ while [ "${#}" -gt 0 ]; do
 
         test)
             ensure_env
+            python3 "${MANAGE_PY}" makemigrations
+            python3 "${MANAGE_PY}" migrate
             cd "${SRC_DIR}" && DEPS_LOG_LEVEL=ERROR pytest
             exit 0
             ;;

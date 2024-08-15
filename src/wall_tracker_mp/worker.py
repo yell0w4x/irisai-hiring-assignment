@@ -61,6 +61,9 @@ LOG_FORMATTER = logging.Formatter(LOG_FORMAT)
 
 class Manager(mp.Process):
     def __init__(self, profiles, workers_num):
+        if not profiles:
+            raise ValueError('Empty profiles collection given')
+
         super().__init__()
         self.__profiles = { i: WallProfile(p, i) for i, p in enumerate(profiles, 1) }
         self.__workers_num = workers_num

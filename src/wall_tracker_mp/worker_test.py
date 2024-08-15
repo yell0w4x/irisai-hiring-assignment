@@ -67,5 +67,7 @@ def test_workers(log_setup, profiles, workers_num, iter):
     result = convert_mp_profiles(mp_profiles)
     assert expected == result
 
-    # result_with_days = convert_mp_profiles_with_days(mp_profiles)
-    # print(result_with_days)
+
+def test_workers_must_reject_empty_profile(log_setup):
+    with pytest.raises(ValueError):
+        man = Manager([], 1)

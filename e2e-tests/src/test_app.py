@@ -31,6 +31,8 @@ def sut_base_url(app_endpoint):
     return f'http://{app_endpoint}'
 
 
+UUID_REGEX = r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+
 @pytest.mark.parametrize('path', ['/profiles', 
                                  '/profiles/',
                                  '/profiles/1/days/-1', 
@@ -45,7 +47,7 @@ def test_must_return_404_not_found_for_any_unknown_url(sut_base_url, path):
     assert data['data'] == dict()
     assert data['meta']['result'] == 'error'
     assert data['meta']['desc'] == 'Not found'
-    assert re.match(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', data['meta']['id']) is not None
+    assert re.match(UUID_REGEX, data['meta']['id']) is not None
 
 
 @pytest.mark.parametrize('path', ['/profiles/1/days/1', '/asdf'])
@@ -82,7 +84,7 @@ def test_profile_daily_ice_amount(sut_base_url, profile_id, day, ice_amount):
     assert data['data']['day'] == day
     assert data['data']['ice_amount'] == ice_amount
     assert data['meta']['result'] == 'success'
-    assert re.match(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', data['meta']['id']) is not None
+    assert re.match(UUID_REGEX, data['meta']['id']) is not None
 
 
 DAILY_COST = DAILY_ICE_VOL * ICE_UNIT_COST
@@ -108,7 +110,7 @@ def test_profile_daily_cost(sut_base_url, profile_id, day, cost):
     assert data['data']['day'] == day
     assert data['data']['cost'] == cost
     assert data['meta']['result'] == 'success'
-    assert re.match(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', data['meta']['id']) is not None
+    assert re.match(UUID_REGEX, data['meta']['id']) is not None
 
 
 @pytest.mark.parametrize('day, cost', [(1, DAILY_COST*3 + DAILY_COST + DAILY_COST*5), 
@@ -130,7 +132,7 @@ def test_all_profiles_daily_cost(sut_base_url, day, cost):
     assert data['data']['day'] == day
     assert data['data']['cost'] == cost
     assert data['meta']['result'] == 'success'
-    assert re.match(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', data['meta']['id']) is not None
+    assert re.match(UUID_REGEX, data['meta']['id']) is not None
 
 
 def test_total_wall_cost(sut_base_url):
@@ -140,4 +142,4 @@ def test_total_wall_cost(sut_base_url):
     assert data['data']['day'] == None
     assert data['data']['cost'] == 32_233_500
     assert data['meta']['result'] == 'success'
-    assert re.match(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', data['meta']['id']) is not None
+    assert re.match(UUID_REGEX, data['meta']['id']) is not None
