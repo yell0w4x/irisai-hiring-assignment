@@ -5,7 +5,6 @@ from rest_framework.status import HTTP_404_NOT_FOUND, HTTP_400_BAD_REQUEST, HTTP
 from wall_tracker.stuff import make_response
 from wall_tracker_mp.worker import Manager
 from wall_tracker_mp.stuff import convert_mp_profiles, convert_mp_profiles_with_days
-from wall_tracker.views import ICE_UNIT_COST, ICE_VOLUME_PER_DAY
 
 import logging
 import asyncio
@@ -17,6 +16,10 @@ _logger = logging.getLogger(__name__)
 
 
 manager = None
+
+
+ICE_VOLUME_PER_DAY = 195
+ICE_UNIT_COST = 1900
 
 
 def start_process():
