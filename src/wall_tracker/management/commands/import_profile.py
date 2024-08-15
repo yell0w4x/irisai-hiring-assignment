@@ -13,12 +13,10 @@ class Command(BaseCommand):
 
         profiles = dict()
         with open(input_file) as f:
-            profiles = { 
-                pid: [int(h) for h in line.strip().split()] for pid, line in enumerate(f, 1) 
-            }
+            profiles = [[int(h) for h in line.strip().split()] for line in f if line.strip()]
 
         WallProfile.objects.all().delete()
-        for profile_id, heights in profiles.items():
+        for profile_id, heights in enumerate(profiles, 1):
             if any(h < MIN_WALL_HEIGHT or h > MAX_WALL_HEIGHT for h in heights):
                 raise ValueError(f'Invalid height value given, profile id: [{profile_id}]')
 

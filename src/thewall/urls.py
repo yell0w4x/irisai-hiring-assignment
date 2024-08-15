@@ -15,7 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, re_path
+from django.urls import path, include
 from django.conf.urls import handler400, handler404, handler500
 
 from wall_tracker.views import (ProfileDailyIceVolumeView, ProfileDailyCostView, 
@@ -27,6 +27,7 @@ urlpatterns = [
     path('profiles/<int:profile_id>/overview/<int:day>/', ProfileDailyCostView.as_view(), name='daily-cost'),
     path('profiles/overview/<int:day>/', AllProfilesDailyCostView.as_view(), name='all-profiles-daily-cost'),
     path('profiles/overview/', TotalWallCostView.as_view(), name='total-wall-cost'),
+    path('mp/', include('wall_tracker_mp.urls'))
 ]
 
 handler400 = BadRequestView.as_view()

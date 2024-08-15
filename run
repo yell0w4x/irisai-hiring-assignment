@@ -131,4 +131,5 @@ if [ -n "${DEV+x}" ]; then
     python3 "${MANAGE_PY}" runserver
 else 
     cd "${SRC_DIR}" && gunicorn --bind '0.0.0.0:8000' thewall:application
+    # cd "${SRC_DIR}" && uvicorn --host '0.0.0.0' thewall:application
 fi 
