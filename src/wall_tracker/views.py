@@ -8,7 +8,6 @@ from wall_tracker.models import WallProfile, MIN_WALL_HEIGHT, MAX_WALL_HEIGHT
 from wall_tracker.stuff import make_response
 
 import logging
-from uuid import uuid4
 
 
 _logger = logging.getLogger(__name__)
@@ -29,7 +28,6 @@ def get_profile(request, profile_id):
 
 ICE_VOLUME_PER_DAY = 195
 ICE_UNIT_COST = 1900
-WALL_DAILY_GROW = 1 # ft
 
 
 def check_value(val):

@@ -48,7 +48,7 @@ def profiles_to_expected(profiles):
 
 
 ITERATIONS = 1
-@pytest.mark.parametrize('workers_num', [3, 10, 15, 50, 100])
+@pytest.mark.parametrize('workers_num', [3, 10, 25, 50, 100])
 @pytest.mark.parametrize('iter', [i for i in range(ITERATIONS)])
 def test_workers(log_setup, profiles, workers_num, iter):
     print(f'ITERATION: {iter}, TOTAL SECTIONS: {sum(len(p) for p in profiles)}, WORKERS: {workers_num}')
