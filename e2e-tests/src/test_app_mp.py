@@ -81,7 +81,7 @@ def test_profile_daily_cost(sut_base_url, profile_id, day):
 
 @pytest.mark.parametrize('day', [1])
 def test_all_profiles_daily_cost(sut_base_url, day):
-    response = requests.get(urljoin(sut_base_url, f'/profiles/overview/{day}'))
+    response = requests.get(urljoin(sut_base_url, f'/mp/profiles/overview/{day}'))
     assert response.status_code == 200
     data = response.json()
     assert data['data']['day'] == day
@@ -91,7 +91,7 @@ def test_all_profiles_daily_cost(sut_base_url, day):
 
 
 def test_total_wall_cost(sut_base_url):
-    response = requests.get(urljoin(sut_base_url, f'/profiles/overview/'))
+    response = requests.get(urljoin(sut_base_url, f'/mp/profiles/overview/'))
     assert response.status_code == 200
     data = response.json()
     assert data['data']['day'] == None

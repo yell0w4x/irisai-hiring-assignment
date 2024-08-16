@@ -129,16 +129,17 @@ if [ -n "${TEST+x}" ]; then
 fi
 
 if [ -n "${E2E_TEST+x}" ]; then
+    ARGS+=(-v)
     echo -e "\e[36mRunning e2e tests...\e[0m"
     docker compose build
 
-    # docker compose run --name "${APP_CONAINER_NAME}" --detach wall_tracker /app/run --debug
-    # docker compose run --name "${E2E_CONTAINER_NAME}" e2e_tests pytest test_app_first_part.py -k test_must_return_404_not_if_no_profiles_at_all "${ARGS[@]}"
-    # remove_containers
+    docker compose run --name "${APP_CONAINER_NAME}" --detach wall_tracker /app/run --debug
+    docker compose run --name "${E2E_CONTAINER_NAME}" e2e_tests pytest test_app_first_part.py -k test_must_return_404_not_if_no_profiles_at_all "${ARGS[@]}"
+    remove_containers
 
-    # docker compose run --name "${APP_CONAINER_NAME}" --detach wall_tracker /app/run --profile /app/wall-profiles1.txt
-    # docker compose run --name "${E2E_CONTAINER_NAME}" e2e_tests pytest test_app_first_part.py -k 'not test_must_return_404_not_if_no_profiles_at_all' "${ARGS[@]}"
-    # remove_containers
+    docker compose run --name "${APP_CONAINER_NAME}" --detach wall_tracker /app/run --profile /app/wall-profiles1.txt
+    docker compose run --name "${E2E_CONTAINER_NAME}" e2e_tests pytest test_app_first_part.py -k 'not test_must_return_404_not_if_no_profiles_at_all' "${ARGS[@]}"
+    remove_containers
 
     docker compose run --name "${APP_CONAINER_NAME}" --detach wall_tracker /app/run --debug
     docker compose run --name "${E2E_CONTAINER_NAME}" e2e_tests pytest test_app_mp.py -k test_must_return_404_not_if_no_profiles_at_all "${ARGS[@]}"

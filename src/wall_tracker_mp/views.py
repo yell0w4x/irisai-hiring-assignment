@@ -58,7 +58,7 @@ def get_days_for_profile(profiles, profile_id, day):
 
 def get_days_for_all_profiles(profiles, day):
     c = Counter()
-    p = profiles[profile_id - 1]
+    p = profiles
     for p in profiles:
         for sect in p:
             d = dict(sect)

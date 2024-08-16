@@ -37,16 +37,14 @@ UUID_REGEX = r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 @pytest.mark.parametrize('url', ['/profiles', 
                                  '/profiles/',
                                  '/profiles/1/days/-1', 
-                                 'profiles/5/days/1/',
+                                 'profiles/10/days/1/',
                                  '/profiles/-1/days/1',
                                  '/asdf',
                                  ])
 @pytest.mark.django_db(databases=['TEST', 'default'])
 def test_must_return_404_not_found_for_any_unknown_url(client, profiles, url):
     response = client.get(url)
-
     assert response.status_code == 404
-
     data = response.json()
     assert data['data'] == dict()
     assert data['meta']['result'] == 'error'
@@ -174,4 +172,4 @@ def test_must_return_404_not_if_no_profiles_at_all(clear_db, client, path):
     assert data['data'] == dict()
     assert data['meta']['result'] == 'error'
     assert data['meta']['desc'] == 'Not found'
-    assert re.match(UUID_REGEX, data['meta']['id']) is not None    
+    assert re.match(UUID_REGEX, data['meta']['id']) is not None
