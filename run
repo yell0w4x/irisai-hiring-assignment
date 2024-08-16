@@ -14,6 +14,8 @@ Runs either app or tests.
 Usage:
     ${0} [COMMANDS] [OPTIONS] [EXTR_ARGS]
 
+    All EXTR_ARGS are passed over to pytest, uvicorn or manage.py runserver.
+
 Commands:
     test           Run tests
     e2e-test       Run e2e tests

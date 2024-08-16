@@ -104,8 +104,15 @@ class Manager(mp.Process):
                 # worker.join()
                 # terminate sometimes doesn't make process exit
                 # worker.terminate()
-                # SIGKILL works always at least on linux
+                # SIGKILL works always at least on Linux
+                # Here we have likely all workers quit
                 worker.kill()
+
+                # This variant looks more properly, but unfortunately 
+                # it leaves some dangling stuff
+                # worker.send_event(ExitEvent())
+                # worker.join()
+                # worker.kill() # event this call doen't matter
 
         for _, worker in workers.items():
             worker.start()
@@ -187,6 +194,7 @@ class Worker(mp.Process):
                 section = None
             return section_ready
 
+        # work = True
         while True:
             event = iq.get()
             logger.debug(f'Event: {event}, workder id: {self.__wid}')
@@ -196,6 +204,9 @@ class Worker(mp.Process):
                     return
                 elif isinstance(event, DayEvent):
                     day = event.day()
+                    # if not work:
+                    #     continue
+
                     if section is None:
                         section = get_available_section()
                         if section is not None:
@@ -203,6 +214,8 @@ class Worker(mp.Process):
                             section.set_busy()
                             section_ready = process_section(day)                            
                         else:
+                            # logger.info('No work left due to no section available')
+                            # work = False
                             logger.info('Worker quit due to no section available')
                             return
                     else:
