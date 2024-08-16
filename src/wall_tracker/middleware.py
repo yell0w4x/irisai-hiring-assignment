@@ -29,7 +29,7 @@ class DisallowPostMiddleware:
 
 
     def __call__(self, request, *args, **kwargs):
-        if request.method == 'POST':
+        if request.method in ('POST', 'PUT', 'DELETE', 'PATCH', 'CONNECT'):
             return make_response(request_id=request.id, 
                                  result='error', 
                                  desc='Method not allowed', 

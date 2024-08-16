@@ -63,8 +63,9 @@ def test_must_return_404_not_found_for_any_unknown_url(sut_base_url, path):
 
 
 @pytest.mark.parametrize('path', ['/profiles/1/days/1', '/asdf'])
-def test_must_return_405_method_not_allowed_for_POST_request(sut_base_url, path):
-    response = requests.post(urljoin(sut_base_url, path))
+@pytest.mark.parametrize('method', ['POST', 'PUT', 'DELETE', 'PATCH', 'CONNECT'])
+def test_must_return_405_method_not_allowed_for_POST_request(sut_base_url, path, method):
+    response = requests.request(method, urljoin(sut_base_url, path))
     data = response.json()
     assert response.status_code == 405
     assert data['data'] == dict()

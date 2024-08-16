@@ -19,21 +19,6 @@ class DayEvent:
         return f'Day {self.__day}'
 
 
-class NewSectionEvent:
-    def __init__(self, profile_id, section_id):
-        self.__profile_id = profile_id
-        self.__section_id = section_id
-
-    def section_id(self):
-        return self.__section_id
-
-    def profile_id(self):
-        return self.__profile_id
-
-    def __str__(self):
-        return f'New section: [profile id: {self.__profile_id}, section id: {self.__section_id}]'
-
-
 class WorkerReadyEvent:
     def __init__(self, worker_id, section_ready, day):
         self.__worker_id = worker_id
