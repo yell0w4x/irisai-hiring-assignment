@@ -60,7 +60,7 @@ $ ./run --dev
 ```
 
 Please note that multi process version uses async handlers. 
-For some reason dev server sometimes on gives Internal Server Error 
+For some reason dev server sometimes gives Internal Server Error 
 for first request to `/mp` API after start.
 
 
@@ -71,7 +71,7 @@ $ ./run --profile wall-profiles.txt
 
 To import profile and set number of workers before run server
 ```text
-./run --profile e2e-tests/wall-profiles2.txt --workers 5
+$ ./run --profile e2e-tests/wall-profiles2.txt --workers 5
 ```
 
 Endpoints
@@ -92,7 +92,7 @@ For multiprocess version endpoints are
 /mp/profiles/overview/
 ```
 
-Workers logs will be available in `src/.log` folder.
+Worker logs will be available in `src/.log` folder.
 
 Assignment has this stanza.
 
@@ -106,7 +106,7 @@ the daily related API will yield distinct values compared to the first case
 where the teams number equals total sections. 
 In first case wall is always completed for not more than 30 days.
 If teams number less than the total sections number the daily cost/ice 
-amount breakdown differs from first variant as for e.g. 2 teams each day complete 2 sections.
+amount breakdown differs from first variant as e.g. 2 teams each day complete 2 sections.
 So the daily cost would be 390 * 1900.
 Please note, I decided to stick with this approach in 
 calculating daily expenses for the second part.

@@ -69,7 +69,6 @@ class Manager(mp.Process):
         self.__workers_num = workers_num
         logging.basicConfig(format=LOG_FORMAT)
         logger = self.__logger = logging.getLogger(Manager.__name__)
-        # logger.setLevel(os.environ.get('LOG_LEVEL', 'DEBUG'))
         logger.setLevel(logging.INFO)
         handler = logging.FileHandler(LOG_DIR / 'manager.log')
         handler.setFormatter(LOG_FORMATTER)
@@ -160,7 +159,6 @@ class Worker(mp.Process):
     def run(self):
         logging.basicConfig(format=LOG_FORMAT)
         logger = self.__logger = logging.getLogger(Worker.__name__)
-        # logger.setLevel(os.environ.get('LOG_LEVEL', 'DEBUG'))
         logger.setLevel(logging.INFO)
         handler = logging.FileHandler(LOG_DIR / f'worker.{self.__wid}.log')
         handler.setFormatter(LOG_FORMATTER)
