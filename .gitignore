@@ -166,3 +166,4 @@ tunnelify
 test.env
 prod.env
 .temp
+*~.py

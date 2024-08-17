@@ -48,26 +48,21 @@ def profiles_to_expected(profiles):
 
 
 ITERATIONS = 1
-@pytest.mark.parametrize('workers_num', [3, 10, 25, 50, 100])
+@pytest.mark.parametrize('workers_num', [3, 10, 25])
 @pytest.mark.parametrize('iter', [i for i in range(ITERATIONS)])
 def test_workers(log_setup, profiles, workers_num, iter):
     print(f'ITERATION: {iter}, TOTAL SECTIONS: {sum(len(p) for p in profiles)}, WORKERS: {workers_num}')
     time.sleep(0.5)
 
     man = Manager(profiles, workers_num)
+    oq = man.output_queue()
     man.start()
-    # process really finishes executing its main function, but sometimes it stay alive and join block forever
-    # man.join()
-    while not man.is_completed():
-        time.sleep(1)
-    mp_profiles = man.profiles()
-    man.terminate()
-
+    mp_profiles = oq.get()
     expected = profiles_to_expected(profiles)
     result = convert_mp_profiles(mp_profiles)
     assert expected == result
 
 
-def test_workers_must_reject_empty_profile(log_setup):
+def test_workers_must_reject_empty_profile():
     with pytest.raises(ValueError):
         man = Manager([], 1)

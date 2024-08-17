@@ -49,3 +49,24 @@ def make_response(request_id, status=HTTP_200_OK, data=None, result='success', d
     return JsonResponse(data=dict(data=dict() if data is None else data, 
                                   meta=dict(id=request_id, result=result, desc=desc)),
                         status=status)
+
+
+def make_404_not_found_response(request_id):
+    return make_response(request_id=request_id, 
+                            result='error', 
+                            desc='Not found', 
+                            status=HTTP_404_NOT_FOUND)
+
+
+def make_400_bad_request_response(request_id):
+    return make_response(request_id=request_id, 
+                            result='error', 
+                            desc='Bad request', 
+                            status=HTTP_400_BAD_REQUEST)
+
+
+def make_500_internal_server_error_response(request_id):
+    return make_response(request_id=request_id, 
+                            result='error', 
+                            desc='Internal server error', 
+                            status=HTTP_500_INTERNAL_SERVER_ERROR)

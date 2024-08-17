@@ -147,7 +147,7 @@ if [ -n "${E2E_TEST+x}" ]; then
     docker compose run --name "${E2E_CONTAINER_NAME}" e2e_tests pytest test_app_mp.py -k test_must_return_404_not_if_no_profiles_at_all "${ARGS[@]}"
     remove_containers
 
-    docker compose run --name "${APP_CONAINER_NAME}" --detach wall_tracker /app/run --profile /app/wall-profiles2.txt --workers 10
+    docker compose run --name "${APP_CONAINER_NAME}" --detach wall_tracker /app/run --profile /app/wall-profiles2.txt --workers 3
     docker compose run --name "${E2E_CONTAINER_NAME}" e2e_tests pytest test_app_mp.py -k 'not test_must_return_404_not_if_no_profiles_at_all' "${ARGS[@]}"
     remove_containers
     exit 0

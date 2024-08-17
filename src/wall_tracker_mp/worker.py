@@ -19,20 +19,32 @@ class DayEvent:
         return f'Day {self.__day}'
 
 
+class NewSectionEvent:
+    def __init__(self, section):
+        section.set_busy()
+        self.__section = section
+
+    def section(self):
+        return self.__section
+
+    def __str__(self):
+        return f'New section: [profile id: {self.__section.profile_id()}, section id: {self.__section.section_id()}]'
+
+
 class WorkerReadyEvent:
-    def __init__(self, worker_id, section_ready, day):
+    def __init__(self, worker_id, day, section=None):
         self.__worker_id = worker_id
-        self.__section_ready = section_ready
+        self.__section = section
         self.__day = day
 
     def workder_id(self):
         return self.__worker_id
 
-    def section_ready(self):
-        return self.__section_ready
+    def section(self):
+        return self.__section
 
     def __str__(self):
-        return f'Worker is ready: [workder id: {self.__worker_id}, section done: {self.__section_ready}, day: {self.__day}]'
+        return f'Worker is ready: [workder id: {self.__worker_id}, section done: {self.__section}, day: {self.__day}]'
 
 
 class ExitEvent:
@@ -42,6 +54,7 @@ class ExitEvent:
 
 LOG_FORMAT = '[%(asctime)s]:%(levelname)-5s:: %(message)s -- {%(filename)s:%(lineno)d:(%(funcName)s)}'
 LOG_FORMATTER = logging.Formatter(LOG_FORMAT)
+LOG_LEVEL = logging.INFO
 
 
 class Manager(mp.Process):
@@ -52,9 +65,10 @@ class Manager(mp.Process):
         super().__init__()
         self.__profiles = { i: WallProfile(p, i) for i, p in enumerate(profiles, 1) }
         self.__workers_num = workers_num
+        self.__output_queue = mp.Queue()
         logging.basicConfig(format=LOG_FORMAT)
         logger = self.__logger = logging.getLogger(Manager.__name__)
-        logger.setLevel(logging.INFO)
+        logger.setLevel(LOG_LEVEL)
         handler = logging.FileHandler(LOG_DIR / 'manager.log')
         handler.setFormatter(LOG_FORMATTER)
         logger.addHandler(handler)
@@ -62,6 +76,10 @@ class Manager(mp.Process):
 
     def profiles(self):
         return self.__profiles
+
+
+    def output_queue(self):
+        return self.__output_queue
 
 
     def is_completed(self):
@@ -77,32 +95,33 @@ class Manager(mp.Process):
 
         logger.info('Manager started')
 
+        def get_available_section():
+            for _, p in profiles.items():
+                sect = p.get_available_section()
+                if sect is not None:
+                    return sect
+
+            return None
+
         def send_event_to_all(event):
-            for wid, worker in workers.items():
+            for worker in started_workers:
                 worker.send_event(event)
 
         def wait_all_exit():
-            for wid, worker in workers.items():
-                # for some reason join() blocks if process is already exited
-                # it's seen in log that worker process function is finished
-                # worker.join()
-                # terminate sometimes doesn't make process exit
-                # worker.terminate()
-                # SIGKILL works always at least on Linux
-                # Here we have likely all workers quit
-                worker.kill()
-
-                # This variant looks more properly, but unfortunately 
-                # it leaves some dangling stuff
-                # worker.send_event(ExitEvent())
-                # worker.join()
-                # worker.kill() # event this call doen't matter
-
-        for _, worker in workers.items():
-            worker.start()
+            for worker in started_workers:
+                worker.send_event(ExitEvent())
+                worker.join()
 
         day = 1
         oq = self.__workers_output
+        started_workers = list()
+
+        for _, worker in workers.items():
+            sect = get_available_section()
+            if sect is not None:
+                worker.send_event(NewSectionEvent(sect))
+                worker.start()
+                started_workers.append(worker)
 
         while True:
             send_event_to_all(DayEvent(day))
@@ -110,13 +129,20 @@ class Manager(mp.Process):
             try:
                 # don't wait for all workers, the first one that is ready triggers new day
                 event = oq.get()
+                if event.section() is not None:
+                    sect = event.section()
+                    profiles[sect.profile_id()].sections()[sect.section_id()] = sect
+                    sect = get_available_section()
+                    if sect is not None:
+                        workers[event.workder_id()].send_event(NewSectionEvent(sect))
+
                 if self.is_completed():
-                    send_event_to_all(ExitEvent())
                     wait_all_exit()
+                    self.__output_queue.put(profiles)
                     logger.info(f'The wall is built')
                     return
             except BaseException as e:
-                logger.debug(f'Unexpected error: [{e}]', exc_info=e)
+                logger.error(f'Unexpected error: [{e}]', exc_info=e)
                 return
 
 
@@ -144,7 +170,7 @@ class Worker(mp.Process):
     def run(self):
         logging.basicConfig(format=LOG_FORMAT)
         logger = self.__logger = logging.getLogger(Worker.__name__)
-        logger.setLevel(logging.INFO)
+        logger.setLevel(LOG_LEVEL)
         handler = logging.FileHandler(LOG_DIR / f'worker.{self.__wid}.log')
         handler.setFormatter(LOG_FORMATTER)
         logger.addHandler(handler)
@@ -155,29 +181,7 @@ class Worker(mp.Process):
         profiles = self.__profiles
         section = None
         logger.info('Worker started')
-
-        def get_available_section():
-            for _, p in profiles.items():
-                sect = p.get_available_section()
-                if sect is not None:
-                    return sect
-
-            return None
        
-        def process_section(day):
-            nonlocal section
-            section.build_step(day)
-            section_ready = section.is_completed()
-            day = event.day()
-            if section_ready:
-                steps = section.steps()
-                section_id = section.section_id()
-                profile_id = section.profile_id()
-                logger.info(f'Section is ready: [{day=}, {profile_id=}, {section_id=}, {steps=}]')
-                section = None
-            return section_ready
-
-        # work = True
         while True:
             event = iq.get()
             logger.debug(f'Event: {event}, workder id: {self.__wid}')
@@ -185,26 +189,26 @@ class Worker(mp.Process):
                 if isinstance(event, ExitEvent):
                     logger.info('Worker quit')
                     return
+                if isinstance(event, NewSectionEvent):
+                    section = event.section()
+                    logger.debug(f'Pick up new section: [sect id: {section.section_id()}, profile id: {section.profile_id()}]')
                 elif isinstance(event, DayEvent):
                     day = event.day()
-                    # if not work:
-                    #     continue
-
                     if section is None:
-                        section = get_available_section()
-                        if section is not None:
-                            logger.debug(f'Pick up new section: [sect id: {section.section_id()}, profile id: {section.profile_id()}]')
-                            section.set_busy()
-                            section_ready = process_section(day)                            
-                        else:
-                            # logger.info('No work left due to no section available')
-                            # work = False
-                            logger.info('Worker quit due to no section available')
-                            return
-                    else:
-                        section_ready = process_section(day)
+                        logger.debug('No section available')
+                        continue
 
-                    oq.put(WorkerReadyEvent(self.__wid, section_ready, day))
+                    section.build_step(day)
+                    if section.is_completed():
+                        steps = section.steps()
+                        section_id = section.section_id()
+                        profile_id = section.profile_id()
+                        logger.info(f'Section is ready: [{day=}, {profile_id=}, {section_id=}, {steps=}]')
+                        oq.put(WorkerReadyEvent(self.__wid, day, section))
+                        section = None
+                        continue
+
+                    oq.put(WorkerReadyEvent(self.__wid, day))
             except BaseException as e:
-                logger.debug(f'Unexpected error: [{e}]', exc_info=e)
+                logger.error(f'Unexpected error: [{e}]', exc_info=e)
                 return
