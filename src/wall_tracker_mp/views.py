@@ -22,25 +22,23 @@ profiles = None
 ICE_VOLUME_PER_DAY = 195
 ICE_UNIT_COST = 1900
 
-exec_event = threading.Event()
+lock = threading.Lock()
 def start_process():
     global manager
     global profiles
-    if manager is None:
-        from wall_tracker.models import WallProfile, TeamsNumber
+    with lock:
+        if manager is None:
+            from wall_tracker.models import WallProfile, TeamsNumber
 
-        exec_event.clear()
-        profiles = [list(p.initial_heights) for p in WallProfile.objects.all()]
-        teams = TeamsNumber.objects.all()
-        workers_num = 1 if len(teams) == 0 else teams[0].teams
-        manager = Manager(profiles, workers_num)
-        oq = manager.output_queue()
-        manager.start()
-        profiles = oq.get()
-        exec_event.set()
+            profiles = [list(p.initial_heights) for p in WallProfile.objects.all()]
+            teams = TeamsNumber.objects.all()
+            workers_num = 1 if len(teams) == 0 else teams[0].teams
+            manager = Manager(profiles, workers_num)
+            oq = manager.output_queue()
+            manager.start()
+            profiles = oq.get()
 
-    exec_event.wait()
-    return profiles
+        return profiles
         
 
 def get_days_for_profile(profiles, profile_id, day):

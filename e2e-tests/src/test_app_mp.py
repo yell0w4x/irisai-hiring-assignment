@@ -79,7 +79,7 @@ def test_profile_daily_cost(sut_base_url, profile_id, day):
     assert re.match(UUID_REGEX, data['meta']['id']) is not None
 
 
-@pytest.mark.parametrize('day', [1])
+@pytest.mark.parametrize('day', [i for i in range(1, 21)])
 def test_all_profiles_daily_cost(sut_base_url, day):
     response = requests.get(urljoin(sut_base_url, f'/mp/profiles/overview/{day}'))
     assert response.status_code == 200
