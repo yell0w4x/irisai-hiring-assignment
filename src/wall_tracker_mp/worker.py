@@ -91,7 +91,7 @@ class Manager(mp.Process):
         logger = self.__logger
         profiles = self.__profiles
         oq = self.__workers_output = mp.Queue()
-        workers = self.__workers = { i: Worker(i, mp.Queue(), oq, profiles) for i in range(self.__workers_num) }
+        workers = self.__workers = { i: Worker(i, mp.Queue(), oq) for i in range(self.__workers_num) }
 
         logger.info('Manager started')
 
@@ -147,12 +147,11 @@ class Manager(mp.Process):
 
 
 class Worker(mp.Process):
-    def __init__(self, wid, input_queue, output_queue, profiles):
+    def __init__(self, wid, input_queue, output_queue):
         super().__init__()
         self.__wid = wid
         self.__input = input_queue
         self.__output = output_queue
-        self.__profiles = profiles
 
 
     def send_event(self, event):
@@ -178,7 +177,6 @@ class Worker(mp.Process):
         iq = self.__input
         oq = self.__output
         logger = self.__logger
-        profiles = self.__profiles
         section = None
         logger.info('Worker started')
        
