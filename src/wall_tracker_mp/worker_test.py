@@ -33,9 +33,9 @@ def log_setup():
 
 @pytest.fixture
 def profiles():
-    WALLS_COUNT = 10
-    MAX_SECTIONS_COUNT = 200
-    return [[random.randint(0, MAX_WALL_HEIGHT) for _ in range(random.randint(1, MAX_SECTIONS_COUNT))] for _ in range(WALLS_COUNT)]
+    WALLS_COUNT = 2
+    MAX_SECTIONS_COUNT = 2000
+    return [[random.randint(0, MAX_WALL_HEIGHT) for _ in range(random.randint(MAX_SECTIONS_COUNT // 3, MAX_SECTIONS_COUNT))] for _ in range(WALLS_COUNT)]
 
 
 def profiles_to_expected(profiles):
@@ -48,7 +48,7 @@ def profiles_to_expected(profiles):
 
 
 ITERATIONS = 1
-@pytest.mark.parametrize('workers_num', [3, 10, 25])
+@pytest.mark.parametrize('workers_num', [10, 25, 50])
 @pytest.mark.parametrize('iter', [i for i in range(ITERATIONS)])
 def test_workers(log_setup, profiles, workers_num, iter):
     print(f'ITERATION: {iter}, TOTAL SECTIONS: {sum(len(p) for p in profiles)}, WORKERS: {workers_num}')

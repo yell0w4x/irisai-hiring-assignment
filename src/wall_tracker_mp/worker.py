@@ -6,6 +6,7 @@ import queue
 import logging
 import time
 import os
+from collections import Counter
 
 
 class DayEvent:
@@ -42,6 +43,9 @@ class WorkerReadyEvent:
 
     def section(self):
         return self.__section
+
+    def day(self):
+        return self.__day
 
     def __str__(self):
         return f'Worker is ready: [workder id: {self.__worker_id}, section done: {self.__section}, day: {self.__day}]'
@@ -123,18 +127,26 @@ class Manager(mp.Process):
                 worker.start()
                 started_workers.append(worker)
 
+        counter = Counter()
+        send_event_to_all(DayEvent(day))
+        day += 1
+
         while True:
-            send_event_to_all(DayEvent(day))
-            day += 1
             try:
-                # don't wait for all workers, the first one that is ready triggers new day
                 event = oq.get()
-                if event.section() is not None:
-                    sect = event.section()
+
+                sect = event.section()
+                if sect is not None:
                     profiles[sect.profile_id()].sections()[sect.section_id()] = sect
                     sect = get_available_section()
                     if sect is not None:
                         workers[event.workder_id()].send_event(NewSectionEvent(sect))
+
+                ready_day = event.day()
+                counter[ready_day] += 1
+                if counter[ready_day] == len(started_workers):
+                    send_event_to_all(DayEvent(day))
+                    day += 1
 
                 if self.is_completed():
                     wait_all_exit()
@@ -194,6 +206,7 @@ class Worker(mp.Process):
                     day = event.day()
                     if section is None:
                         logger.debug('No section available')
+                        oq.put(WorkerReadyEvent(self.__wid, day))
                         continue
 
                     section.build_step(day)
